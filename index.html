@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphe Interactif</title>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #matrix-container {
+            flex: 1;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+            overflow: auto;
+        }
+        #matrix {
+            border-collapse: collapse;
+            margin: auto;
+        }
+        #matrix th, #matrix td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        #matrix th {
+            background-color: #f2f2f2;
+        }
+        #canvas-container {
+            flex: 1;
+            padding: 20px;
+            position: relative;
+        }
+        #canvas {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            position: relative;
+            background-color: #f9f9f9;
+        }
+        #lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .point {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            border-radius: 50%;
+            cursor: pointer;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
+        .point:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+    <div id="matrix-container">
+        <h2>Matrice d'Adjacence</h2>
+        <table id="matrix">
+            <!-- La matrice sera générée dynamiquement -->
+        </table>
+    </div>
+    <div id="canvas-container">
+        <h2>Zone de Clic (Ajoutez des Points)</h2>
+        <div id="canvas">
+            <svg id="lines">
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        let points = [];
+        let links = [];
+        let selectedPoint = null;
+        let tempLine = null;
+
+        const canvas = document.getElementById('canvas');
+        const linesSvg = document.getElementById('lines');
+        const matrixTable = document.getElementById('matrix');
+
+        // Charger la matrice et les points au démarrage
+        async function loadData() {
+            const response = await fetch('/matrix');
+            const data = await response.json();
+            points = data.points;
+            links = data.links;
+            updateMatrix(data.matrix);
+            updateCanvas();
+            updateLinks();
+        }
+
+        canvas.addEventListener('click', async function(event) {
+            if (event.target.classList.contains('point')) return; // Ignore si clic sur point
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Envoyer au serveur
+            const response = await fetch('/add_point', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ x: x, y: y })
+            });
+            const result = await response.json();
+
+            // Recharger les données
+            await loadData();
+        });
+
+        canvas.addEventListener('mousemove', function(event) {
+            if (selectedPoint) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                updateTempLine(x, y);
+            }
+        });
+
+        function updateMatrix(matrixData) {
+            // Vider la matrice
+            matrixTable.innerHTML = '';
+
+            // Ajouter l'en-tête
+            const headerRow = document.createElement('tr');
+            headerRow.appendChild(document.createElement('th')); // Coin vide
+            for (let i = 0; i < points.length; i++) {
+                const th = document.createElement('th');
+                th.textContent = points[i].id;
+                headerRow.appendChild(th);
+            }
+            matrixTable.appendChild(headerRow);
+
+            // Ajouter les lignes
+            for (let i = 0; i < points.length; i++) {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                th.textContent = points[i].id;
+                row.appendChild(th);
+
+                for (let j = 0; j < points.length; j++) {
+                    const cell = document.createElement('td');
+                    cell.textContent = matrixData[i][j];
+                    row.appendChild(cell);
+                }
+                matrixTable.appendChild(row);
+            }
+        }
+
+        function updateCanvas() {
+            // Vider le canvas sauf SVG
+            const svg = canvas.querySelector('svg');
+            canvas.innerHTML = '';
+            canvas.appendChild(svg);
+
+            // Ajouter les points
+            points.forEach(point => {
+                if (!point.color) point.color = '#ff0000'; // Couleur par défaut pour anciens points
+                const pointDiv = document.createElement('div');
+                pointDiv.className = 'point';
+                pointDiv.style.left = (point.x - 15) + 'px'; // Centrer (30/2 = 15)
+                pointDiv.style.top = (point.y - 15) + 'px';
+                pointDiv.textContent = point.id;
+                pointDiv.style.backgroundColor = point.color;
+                pointDiv.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    if (selectedPoint === null) {
+                        selectedPoint = point.id;
+                        startTempLine(point.x, point.y, point.color);
+                    } else if (selectedPoint !== point.id) {
+                        // Créer le lien
+                        await fetch('/add_link', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ from: selectedPoint, to: point.id })
+                        });
+                        selectedPoint = null;
+                        removeTempLine();
+                        await loadData();
+                    } else {
+                        // Clic sur le même point : créer une self-loop
+                        await fetch('/add_link', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ from: selectedPoint, to: point.id })
+                        });
+                        selectedPoint = null;
+                        removeTempLine();
+                        await loadData();
+                    }
+                });
+                canvas.appendChild(pointDiv);
+            });
+        }
+
+        function updateLinks() {
+            // Vider les lignes sauf temp
+            const lines = linesSvg.querySelectorAll('line:not(.temp), polygon:not(.temp)');
+            lines.forEach(l => l.remove());
+
+            links.forEach(link => {
+                const fromPoint = points.find(p => p.id === link.from);
+                const toPoint = points.find(p => p.id === link.to);
+                if (fromPoint && toPoint) {
+                    if (link.from === link.to) {
+                        // Self-loop : dessiner un arc
+                        const radius = 16;
+                        const cx = fromPoint.x;
+                        const cy = fromPoint.y - radius;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', `M ${cx - radius} ${cy} A ${radius} ${radius} 0 1 1 ${cx + radius} ${cy}`);
+                        path.setAttribute('stroke', fromPoint.color);
+                        path.setAttribute('stroke-width', '2');
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('opacity', '0.6');
+                        linesSvg.appendChild(path);
+
+                        // Flèche pour self-loop
+                        const arrowX = cx + radius / 4;
+                        const arrowY = cy;
+                        const angle = Math.PI; // Vers la gauche
+                        const arrowLength = 15;
+                        const arrowWidth = 7;
+                        const p1x = arrowX - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle);
+                        const p1y = arrowY - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle);
+                        const p2x = arrowX;
+                        const p2y = arrowY;
+                        const p3x = arrowX - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle);
+                        const p3y = arrowY - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle);
+
+                        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        arrow.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+                        arrow.setAttribute('fill', fromPoint.color);
+                        arrow.setAttribute('opacity', '0.6');
+                        linesSvg.appendChild(arrow);
+                    } else {
+                        // Ligne normale
+                        // Calculer les coordonnées pour arrêter la ligne avant le point d'arrivée
+                        const dx = toPoint.x - fromPoint.x;
+                        const dy = toPoint.y - fromPoint.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const offset = 20; // Distance avant le point
+                        const ratio = (dist - offset) / dist;
+                        const x2 = fromPoint.x + dx * ratio;
+                        const y2 = fromPoint.y + dy * ratio;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', fromPoint.x);
+                        line.setAttribute('y1', fromPoint.y);
+                        line.setAttribute('x2', x2);
+                        line.setAttribute('y2', y2);
+                        line.setAttribute('stroke', fromPoint.color);
+                        line.setAttribute('stroke-width', '2');
+                        line.setAttribute('opacity', '0.6');
+                        linesSvg.appendChild(line);
+
+                        // Ajouter la flèche (triangle)
+                        const angle = Math.atan2(dy, dx);
+                        const arrowLength = 10;
+                        const arrowWidth = 7;
+                        const arrowX = x2;
+                        const arrowY = y2;
+                        const p1x = arrowX - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle);
+                        const p1y = arrowY - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle);
+                        const p2x = arrowX;
+                        const p2y = arrowY;
+                        const p3x = arrowX - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle);
+                        const p3y = arrowY - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle);
+
+                        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        arrow.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+                        arrow.setAttribute('fill', fromPoint.color);
+                        arrow.setAttribute('opacity', '0.6');
+                        linesSvg.appendChild(arrow);
+                    }
+                }
+            });
+        }
+
+        let tempArrow = null;
+
+        function startTempLine(x, y, color) {
+            tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tempLine.classList.add('temp');
+            tempLine.setAttribute('x1', x);
+            tempLine.setAttribute('y1', y);
+            tempLine.setAttribute('x2', x);
+            tempLine.setAttribute('y2', y);
+            tempLine.setAttribute('stroke', color);
+            tempLine.setAttribute('stroke-width', '2');
+            tempLine.setAttribute('stroke-dasharray', '5,5');
+            tempLine.setAttribute('opacity', '0.6');
+            tempLine.setAttribute('color', color);
+            linesSvg.appendChild(tempLine);
+
+            tempArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            tempArrow.classList.add('temp');
+            tempArrow.setAttribute('points', '0,0 0,0 0,0');
+            tempArrow.setAttribute('fill', color);
+            tempArrow.setAttribute('opacity', '0.6');
+            linesSvg.appendChild(tempArrow);
+        }
+
+        function updateTempLine(x, y) {
+            if (tempLine && tempArrow) {
+                const x1 = parseFloat(tempLine.getAttribute('x1'));
+                const y1 = parseFloat(tempLine.getAttribute('y1'));
+                const dx = x - x1;
+                const dy = y - y1;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const offset = 20;
+                const ratio = (dist - offset) / dist;
+                const x2 = x1 + dx * ratio;
+                const y2 = y1 + dy * ratio;
+
+                tempLine.setAttribute('x2', x2);
+                tempLine.setAttribute('y2', y2);
+
+                // Calculer la flèche
+                const angle = Math.atan2(dy, dx);
+                const arrowLength = 10;
+                const arrowWidth = 7;
+                const arrowX = x2;
+                const arrowY = y2;
+                const p1x = arrowX - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle);
+                const p1y = arrowY - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle);
+                const p2x = arrowX;
+                const p2y = arrowY;
+                const p3x = arrowX - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle);
+                const p3y = arrowY - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle);
+
+                tempArrow.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+            }
+        }
+
+        function removeTempLine() {
+            if (tempLine) {
+                tempLine.remove();
+                tempLine = null;
+            }
+            if (tempArrow) {
+                tempArrow.remove();
+                tempArrow = null;
+            }
+        }
+
+        // Charger au démarrage
+        loadData();
+    </script>
+</body>
+</html>
