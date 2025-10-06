@@ -29,6 +29,45 @@
         #matrix th {
             background-color: #f2f2f2;
         }
+        #analysis {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #analysis h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .property {
+            margin: 8px 0;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .property-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .property-value {
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .property-value.true {
+            background-color: #90EE90;
+            color: #006400;
+        }
+        .property-value.false {
+            background-color: #FFB6C1;
+            color: #8B0000;
+        }
+        .property-value.info {
+            background-color: #E0E0E0;
+            color: #333;
+        }
         #canvas-container {
             flex: 1;
             padding: 20px;
@@ -72,6 +111,38 @@
         <table id="matrix">
             <!-- La matrice sera générée dynamiquement -->
         </table>
+        
+        <div id="analysis">
+            <h3>Propriétés du Graphe</h3>
+            <div class="property">
+                <span class="property-label">Nombre de sommets:</span>
+                <span class="property-value info" id="num-vertices">0</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Nombre d'arêtes:</span>
+                <span class="property-value info" id="num-edges">0</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Complet:</span>
+                <span class="property-value" id="is-complete">-</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Réflexif:</span>
+                <span class="property-value" id="is-reflexive">-</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Symétrique:</span>
+                <span class="property-value" id="is-symmetric">-</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Antisymétrique:</span>
+                <span class="property-value" id="is-antisymmetric">-</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Transitif:</span>
+                <span class="property-value" id="is-transitive">-</span>
+            </div>
+        </div>
     </div>
     <div id="canvas-container">
         <h2>Zone de Clic (Ajoutez des Points)</h2>
@@ -98,8 +169,23 @@
             points = data.points;
             links = data.links;
             updateMatrix(data.matrix);
+            updateAnalysis(data.analysis);
             updateCanvas();
             updateLinks();
+        }
+
+        function updateAnalysis(analysis) {
+            document.getElementById('num-vertices').textContent = analysis.num_vertices;
+            document.getElementById('num-edges').textContent = analysis.num_edges;
+            
+            const boolProps = ['is-complete', 'is-reflexive', 'is-symmetric', 'is-antisymmetric', 'is-transitive'];
+            boolProps.forEach(prop => {
+                const elem = document.getElementById(prop);
+                const key = prop.replace(/-/g, '_');
+                const value = analysis[key];
+                elem.textContent = value ? 'Oui' : 'Non';
+                elem.className = 'property-value ' + (value ? 'true' : 'false');
+            });
         }
 
         canvas.addEventListener('click', async function(event) {
@@ -209,7 +295,7 @@
 
         function updateLinks() {
             // Vider les lignes sauf temp
-            const lines = linesSvg.querySelectorAll('line:not(.temp), polygon:not(.temp)');
+            const lines = linesSvg.querySelectorAll('line:not(.temp), polygon:not(.temp), path:not(.temp)');
             lines.forEach(l => l.remove());
 
             links.forEach(link => {
@@ -218,7 +304,7 @@
                 if (fromPoint && toPoint) {
                     if (link.from === link.to) {
                         // Self-loop : dessiner un arc
-                        const radius = 16;
+                        const radius = 20;
                         const cx = fromPoint.x;
                         const cy = fromPoint.y - radius;
                         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');

@@ -1,5 +1,29 @@
+"""
+Interactive Graph Application - Flask Backend
+==============================================
+
+This Flask application provides a backend for an interactive graph visualization tool.
+Users can create points on a canvas and establish directed relationships between them.
+
+Features:
+- Add points with unique IDs and random colors
+- Create directed links between points (including self-loops)
+- Generate adjacency matrix representation
+- Analyze graph properties (completeness, reflexivity, symmetry, etc.)
+
+Author: Samuel Chapuis
+Date: October 2, 2025
+Version: 1.0
+"""
+
+
+""" External imports """
 from flask import Flask, request, jsonify, send_from_directory
 import os
+
+""" Internal imports """
+from analyze import (analyze_graph, build_adjacency_matrix)
+
 
 app = Flask(__name__)
 
@@ -17,6 +41,7 @@ def get_next_id():
         return 'A'
     last_id = points[-1]['id']
     return chr(ord(last_id) + 1)
+
 
 @app.route('/')
 def index():
@@ -43,15 +68,15 @@ def add_link():
 
 @app.route('/matrix')
 def get_matrix():
-    n = len(points)
-    matrix = [[0 for _ in range(n)] for _ in range(n)]
-    id_to_index = {p['id']: i for i, p in enumerate(points)}
-    for link in links:
-        if link['from'] in id_to_index and link['to'] in id_to_index:
-            i = id_to_index[link['from']]
-            j = id_to_index[link['to']]
-            matrix[i][j] = 1
-    return jsonify({'matrix': matrix, 'points': points, 'links': links})
+    matrix = build_adjacency_matrix(points, links)
+    analysis = analyze_graph(points, links)
+    
+    return jsonify({
+        'matrix': matrix, 
+        'points': points, 
+        'links': links,
+        'analysis': analysis
+    })
 
 if __name__ == '__main__':
     print("Démarrage de l'application Flask...")
