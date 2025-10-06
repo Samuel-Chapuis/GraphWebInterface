@@ -35,15 +35,15 @@ def build_adjacency_matrix(points, links):
     
     return matrix
 
-def is_strictly_complete(matrix):
-    """Tests if the graph is strictly complete (all possible edges exist, except self-loops)"""
+def is_complete(matrix):
+    """Tests if the graph is complete (all possible edges exist, including self-loops)"""
     n = len(matrix)
     if n == 0:
         return False
     
     for i in range(n):
         for j in range(n):
-            if i != j and matrix[i][j] != 1:
+            if matrix[i][j] == 0 and matrix[j][i] == 0:
                 return False
     return True
 
@@ -97,7 +97,7 @@ def is_antisymmetric(matrix):
 def is_transitive(matrix):
     """Tests if the graph is transitive (if a->b and b->c then a->c)"""
     n = len(matrix)
-    if n == 0:
+    if n < 3:  # Transitivity is not defined for graphs with less than 3 vertices
         return False
     
     for i in range(n):
@@ -107,6 +107,34 @@ def is_transitive(matrix):
                     if matrix[i][k] != 1:
                         return False
     return True
+
+def is_negatively_transitive(matrix):
+    """Tests if the graph is negatively transitive (if not a->b and not b->c then not a->c)"""
+    n = len(matrix)
+    if n < 3:  # Negative transitivity is not defined for graphs with less than 3 vertices
+        return False
+    
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                if matrix[i][j] == 0 and matrix[j][k] == 0:
+                    if matrix[i][k] != 0:
+                        return False
+    return True
+
+def is_complete_order(matrix):
+    """Tests if the graph is a complete order (reflexive, antisymmetric, transitive, and complete)"""
+    return (is_complete(matrix) and
+            is_reflexive(matrix) and
+            is_antisymmetric(matrix) and
+            is_transitive(matrix))
+
+def is_complete_preorder(matrix):
+    """Tests if the graph is a complete preorder (reflexive, antisymmetric, transitive, and complete)"""
+    return (is_complete(matrix) and
+            is_transitive(matrix))
+
+
 
 def analyze_graph(points, links):
     """Analyzes the graph properties"""
@@ -126,12 +154,14 @@ def analyze_graph(points, links):
     matrix = build_adjacency_matrix(points, links)
     
     return {
-        'is_strictly_complete': is_strictly_complete(matrix),
+        'is_strictly_complete': is_complete(matrix),
         'is_soft_complete': is_soft_complete(matrix),
         'is_reflexive': is_reflexive(matrix),
         'is_symmetric': is_symmetric(matrix),
         'is_antisymmetric': is_antisymmetric(matrix),
         'is_transitive': is_transitive(matrix),
         'num_vertices': n,
-        'num_edges': len(links)
+        'num_edges': len(links),
+        'is_complete_order': is_complete_order(matrix),
+        'is_complete_preorder': is_complete_preorder(matrix)
     }

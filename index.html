@@ -40,16 +40,21 @@
             margin-top: 0;
             color: #333;
         }
-        .property {
-            margin: 8px 0;
-            padding: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        #properties-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .property-label {
+        #properties-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        #properties-table td.label {
             font-weight: bold;
             color: #555;
+            width: 25%;
+        }
+        #properties-table td.value {
+            width: 25%;
         }
         .property-value {
             padding: 3px 10px;
@@ -72,13 +77,14 @@
             flex: 1;
             padding: 20px;
             position: relative;
+            cursor: crosshair; /* Indicate it's clickable */
         }
         #canvas {
             width: 100%;
-            height: 400px;
-            border: 1px solid #ccc;
+            height: 100%; /* Fill the container */
             position: relative;
             background-color: #f9f9f9;
+            border: 1px solid #ccc;
         }
         #lines {
             position: absolute;
@@ -103,6 +109,11 @@
         .point:hover {
             background-color: darkred;
         }
+        #click-area-title {
+            font-size: 14px; /* Make it small */
+            margin: 0;
+            display: inline;
+        }
         #reset-button {
             margin-left: 10px;
             padding: 5px 10px;
@@ -115,6 +126,18 @@
         #reset-button:hover {
             background-color: #d32f2f;
         }
+        #fill-diagonal-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #fill-diagonal-button:hover {
+            background-color: #1976D2;
+        }
     </style>
 </head>
 <body>
@@ -126,42 +149,44 @@
         
         <div id="analysis">
             <h3>Graph Properties</h3>
-            <div class="property">
-                <span class="property-label">Number of vertices:</span>
-                <span class="property-value info" id="num-vertices">0</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Number of edges:</span>
-                <span class="property-value info" id="num-edges">0</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Strictly Complete:</span>
-                <span class="property-value" id="is-strictly-complete">-</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Soft Complete:</span>
-                <span class="property-value" id="is-soft-complete">-</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Reflexive:</span>
-                <span class="property-value" id="is-reflexive">-</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Symmetric:</span>
-                <span class="property-value" id="is-symmetric">-</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Antisymmetric:</span>
-                <span class="property-value" id="is-antisymmetric">-</span>
-            </div>
-            <div class="property">
-                <span class="property-label">Transitive:</span>
-                <span class="property-value" id="is-transitive">-</span>
-            </div>
+            <table id="properties-table">
+                <tr>
+                    <td class="label">Number of vertices:</td>
+                    <td class="value"><span class="property-value info" id="num-vertices">0</span></td>
+                    <td class="label">Symmetric:</td>
+                    <td class="value"><span class="property-value" id="is-symmetric">-</span></td>
+                </tr>
+                <tr>
+                    <td class="label">Number of edges:</td>
+                    <td class="value"><span class="property-value info" id="num-edges">0</span></td>
+                    <td class="label">Antisymmetric:</td>
+                    <td class="value"><span class="property-value" id="is-antisymmetric">-</span></td>
+                </tr>
+                <tr>
+                    <td class="label">Strictly Complete:</td>
+                    <td class="value"><span class="property-value" id="is-strictly-complete">-</span></td>
+                    <td class="label">Transitive:</td>
+                    <td class="value"><span class="property-value" id="is-transitive">-</span></td>
+                </tr>
+                <tr>
+                    <td class="label">Soft Complete:</td>
+                    <td class="value"><span class="property-value" id="is-soft-complete">-</span></td>
+                    <td class="label">Complete Order:</td>
+                    <td class="value"><span class="property-value" id="is-complete-order">-</span></td>
+                </tr>
+                <tr>
+                    <td class="label">Reflexive:</td>
+                    <td class="value"><span class="property-value" id="is-reflexive">-</span></td>
+                    <td class="label">Complete Preorder:</td>
+                    <td class="value"><span class="property-value" id="is-complete-preorder">-</span></td>
+                </tr>
+            </table>
         </div>
     </div>
     <div id="canvas-container">
-        <h2>Click Area (Add Points) <button id="reset-button">Reset Graph</button></h2>
+        <p id="click-area-title">Click Area (Add Points)</p>
+        <button id="reset-button">Reset Graph</button>
+        <button id="fill-diagonal-button">Fill Diagonal</button>
         <div id="canvas">
             <svg id="lines">
             </svg>
@@ -175,9 +200,11 @@
         let tempLine = null;
 
         const canvas = document.getElementById('canvas');
+        const canvasContainer = document.getElementById('canvas-container');
         const linesSvg = document.getElementById('lines');
         const matrixTable = document.getElementById('matrix');
         const resetButton = document.getElementById('reset-button');
+        const fillDiagonalButton = document.getElementById('fill-diagonal-button');
 
         // Load matrix and points on startup
         async function loadData() {
@@ -195,7 +222,7 @@
             document.getElementById('num-vertices').textContent = analysis.num_vertices;
             document.getElementById('num-edges').textContent = analysis.num_edges;
             
-            const boolProps = ['is-strictly-complete', 'is-soft-complete', 'is-reflexive', 'is-symmetric', 'is-antisymmetric', 'is-transitive'];
+            const boolProps = ['is-strictly-complete', 'is-soft-complete', 'is-reflexive', 'is-symmetric', 'is-antisymmetric', 'is-transitive', 'is-complete-order', 'is-complete-preorder'];
             boolProps.forEach(prop => {
                 const elem = document.getElementById(prop);
                 const key = prop.replace(/-/g, '_');
@@ -205,11 +232,23 @@
             });
         }
 
-        canvas.addEventListener('click', async function(event) {
-            if (event.target.classList.contains('point')) return; // Ignore if clicking on point
+        canvasContainer.addEventListener('click', async function(event) {
+            // Ignore if clicking on point or button
+            if (event.target.classList.contains('point') || event.target.tagName === 'BUTTON') return;
+            
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
+
+            // Check if the click is too close to an existing point (forbidden hitbox: 2x size, so radius 30px)
+            const forbiddenRadius = 30; // 15px point radius * 2
+            const tooClose = points.some(point => {
+                const dx = x - point.x;
+                const dy = y - point.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < forbiddenRadius;
+            });
+            if (tooClose) return; // Don't add point if too close
 
             // Send to server
             const response = await fetch('/add_point', {
@@ -236,6 +275,11 @@
 
         resetButton.addEventListener('click', async function() {
             await fetch('/reset', { method: 'POST' });
+            await loadData();
+        });
+
+        fillDiagonalButton.addEventListener('click', async function() {
+            await fetch('/fill_diagonal', { method: 'POST' });
             await loadData();
         });
 

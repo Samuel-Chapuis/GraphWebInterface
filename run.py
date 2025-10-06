@@ -11,6 +11,7 @@ Features:
 - Generate adjacency matrix representation
 - Analyze graph properties (completeness, reflexivity, symmetry, etc.)
 - Reset the graph to start over
+- Fill the diagonal (add self-loops to all points)
 
 Author: Samuel Chapuis
 Date: October 6, 2025
@@ -72,6 +73,14 @@ def reset_graph():
     global points, links
     points = []
     links = []
+    return jsonify({'success': True})
+
+@app.route('/fill_diagonal', methods=['POST'])
+def fill_diagonal():
+    for point in points:
+        link = {'from': point['id'], 'to': point['id']}
+        if not any(l['from'] == link['from'] and l['to'] == link['to'] for l in links):
+            links.append(link)
     return jsonify({'success': True})
 
 @app.route('/matrix')
