@@ -47,40 +47,45 @@ def indiference_relation(matrix):
 
 def topological_sort_soft(matrix):
     """Returns a topological sort of the graph without cycles and the indifference pairwise comparisons"""
+    
     if matrix is None:
         return None
+    mat = np.array(indiference_relation(matrix), dtype=int)
+    if not np.all(mat == 0):
+        print("Graph contains cycles or is empty")
+        return []
+    
     mat = np.array(matrix, dtype=int)
     n = mat.shape[0]
-    
-    # Create a list to store the sorted elements
+    strict = strict_relation(mat)
+
+    # Build adjacency list ignoring indifference relations
+    adj = {i: [] for i in range(n)}
+    in_degree = [0] * n
+    for i in range(n):
+        for j in range(n):
+            if strict[i, j] == 1:
+                adj[i].append(j)
+                in_degree[j] += 1
+
+    # Kahn's algorithm for topological sort
+    queue = [i for i in range(n) if in_degree[i] == 0]
     sorted_list = []
-    # Create a set to track visited nodes
-    visited = set()
-    
-    def visit(node):
-        if node in visited:
-            return
-        visited.add(node)
-        for neighbor in range(n):
-            if mat[node, neighbor] == 1 and mat[neighbor, node] == 0:
-                visit(neighbor)
+
+    while queue:
+        node = queue.pop(0)
         sorted_list.append(node)
-    
-    for i in range(n):
-        visit(i)
-    
-    sorted_list.reverse()
-    
-    # Add indifference pairs
-    for i in range(n):
-        for j in range(i + 1, n):
-            if mat[i, j] == 1 and mat[j, i] == 1:
-                if i not in sorted_list:
-                    sorted_list.append(i)
-                if j not in sorted_list:
-                    sorted_list.append(j)
-    
+        for neighbor in adj[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(sorted_list) != n:
+        return None  # Cycle detected
+
     return sorted_list
+    
+
 
 def topological_sort_strict(matrix):
     """Returns a topological sort of the graph where the different pairwise comparisons exist"""
