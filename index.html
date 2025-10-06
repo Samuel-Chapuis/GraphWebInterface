@@ -73,6 +73,42 @@
             background-color: #E0E0E0;
             color: #333;
         }
+        #additional-matrices {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #additional-matrices h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .matrix-button {
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .matrix-button:hover {
+            background-color: #45a049;
+        }
+        #result-matrix {
+            margin-top: 15px;
+            border-collapse: collapse;
+            margin: auto;
+        }
+        #result-matrix th, #result-matrix td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        #result-matrix th {
+            background-color: #f2f2f2;
+        }
         #canvas-container {
             flex: 1;
             padding: 20px;
@@ -182,6 +218,17 @@
                 </tr>
             </table>
         </div>
+
+        <div id="additional-matrices">
+            <h3>Additional Matrices</h3>
+            <button class="matrix-button" id="strict-relation-btn">Show Strict Relation</button>
+            <button class="matrix-button" id="indifference-relation-btn">Show Indifference Relation</button>
+            <button class="matrix-button" id="topological-sort-soft-btn">Show Topological Sort Soft</button>
+            <button class="matrix-button" id="topological-sort-strict-btn">Show Topological Sort Strict</button>
+            <table id="result-matrix">
+                <!-- Result matrix will be displayed here -->
+            </table>
+        </div>
     </div>
     <div id="canvas-container">
         <p id="click-area-title">Click Area (Add Points)</p>
@@ -203,8 +250,13 @@
         const canvasContainer = document.getElementById('canvas-container');
         const linesSvg = document.getElementById('lines');
         const matrixTable = document.getElementById('matrix');
+        const resultMatrixTable = document.getElementById('result-matrix');
         const resetButton = document.getElementById('reset-button');
         const fillDiagonalButton = document.getElementById('fill-diagonal-button');
+        const strictRelationBtn = document.getElementById('strict-relation-btn');
+        const indifferenceRelationBtn = document.getElementById('indifference-relation-btn');
+        const topologicalSortSoftBtn = document.getElementById('topological-sort-soft-btn');
+        const topologicalSortStrictBtn = document.getElementById('topological-sort-strict-btn');
 
         // Load matrix and points on startup
         async function loadData() {
@@ -282,6 +334,89 @@
             await fetch('/fill_diagonal', { method: 'POST' });
             await loadData();
         });
+
+        strictRelationBtn.addEventListener('click', async function() {
+            const response = await fetch('/strict_relation');
+            const data = await response.json();
+            displayMatrix(data.matrix, 'Strict Relation');
+        });
+
+        indifferenceRelationBtn.addEventListener('click', async function() {
+            const response = await fetch('/indifference_relation');
+            const data = await response.json();
+            displayMatrix(data.matrix, 'Indifference Relation');
+        });
+
+        topologicalSortSoftBtn.addEventListener('click', async function() {
+            const response = await fetch('/topological_sort_soft');
+            const data = await response.json();
+            displayList(data.sort, 'Topological Sort Soft');
+        });
+
+        topologicalSortStrictBtn.addEventListener('click', async function() {
+            const response = await fetch('/topological_sort_strict');
+            const data = await response.json();
+            displayList(data.sort, 'Topological Sort Strict');
+        });
+
+        function displayMatrix(matrixData, title) {
+            // Clear the table
+            resultMatrixTable.innerHTML = '';
+
+            // Add title as a row
+            const titleRow = document.createElement('tr');
+            const titleCell = document.createElement('th');
+            titleCell.colSpan = points.length + 1;
+            titleCell.textContent = title;
+            titleRow.appendChild(titleCell);
+            resultMatrixTable.appendChild(titleRow);
+
+            // Add header
+            const headerRow = document.createElement('tr');
+            headerRow.appendChild(document.createElement('th')); // Empty corner
+            for (let i = 0; i < points.length; i++) {
+                const th = document.createElement('th');
+                th.textContent = points[i].id;
+                headerRow.appendChild(th);
+            }
+            resultMatrixTable.appendChild(headerRow);
+
+            // Add rows
+            for (let i = 0; i < points.length; i++) {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                th.textContent = points[i].id;
+                row.appendChild(th);
+
+                for (let j = 0; j < points.length; j++) {
+                    const cell = document.createElement('td');
+                    cell.textContent = matrixData[i][j];
+                    row.appendChild(cell);
+                }
+                resultMatrixTable.appendChild(row);
+            }
+        }
+
+        function displayList(sortData, title) {
+            // Clear the table
+            resultMatrixTable.innerHTML = '';
+
+            // Add title
+            const titleRow = document.createElement('tr');
+            const titleCell = document.createElement('th');
+            titleCell.textContent = title;
+            titleRow.appendChild(titleCell);
+            resultMatrixTable.appendChild(titleRow);
+
+            // Add the list as a single row
+            const row = document.createElement('tr');
+            for (let i = 0; i < sortData.length; i++) {
+                const cell = document.createElement('td');
+                cell.textContent = points[sortData[i]].id;
+                row.appendChild(cell);
+            }
+            resultMatrixTable.appendChild(row);
+        }
 
         function updateMatrix(matrixData) {
             // Clear the matrix

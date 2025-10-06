@@ -22,9 +22,11 @@ Version: 1.0
 """ External imports """
 from flask import Flask, request, jsonify, send_from_directory
 import os
+import numpy as np
 
 """ Internal imports """
 from analyze import (analyze_graph, build_adjacency_matrix)
+from returner import (strict_relation, indiference_relation, topological_sort_soft, topological_sort_strict)
 
 
 app = Flask(__name__)
@@ -89,11 +91,35 @@ def get_matrix():
     analysis = analyze_graph(points, links)
     
     return jsonify({
-        'matrix': matrix, 
+        'matrix': matrix.tolist(), 
         'points': points, 
         'links': links,
         'analysis': analysis
     })
+
+@app.route('/strict_relation')
+def get_strict_relation():
+    matrix = build_adjacency_matrix(points, links)
+    strict = strict_relation(matrix)
+    return jsonify({'matrix': strict.tolist()})
+
+@app.route('/indifference_relation')
+def get_indifference_relation():
+    matrix = build_adjacency_matrix(points, links)
+    indifference = indiference_relation(matrix)
+    return jsonify({'matrix': indifference.tolist()})
+
+@app.route('/topological_sort_soft')
+def get_topological_sort_soft():
+    matrix = build_adjacency_matrix(points, links)
+    sort = topological_sort_soft(matrix)
+    return jsonify({'sort': sort})
+
+@app.route('/topological_sort_strict')
+def get_topological_sort_strict():
+    matrix = build_adjacency_matrix(points, links)
+    sort = topological_sort_strict(matrix)
+    return jsonify({'sort': sort})
 
 if __name__ == '__main__':
     print("Starting Flask application...")

@@ -21,104 +21,120 @@ Date: October 6, 2025
 Version: 1.0
 """
 
+import numpy as np
+
 def build_adjacency_matrix(points, links):
     """Builds the adjacency matrix from points and links"""
     n = len(points)
-    matrix = [[0 for _ in range(n)] for _ in range(n)]
+    matrix = np.zeros((n, n), dtype=int)
     id_to_index = {p['id']: i for i, p in enumerate(points)}
     
     for link in links:
         if link['from'] in id_to_index and link['to'] in id_to_index:
             i = id_to_index[link['from']]
             j = id_to_index[link['to']]
-            matrix[i][j] = 1
+            matrix[i, j] = 1
     
     return matrix
 
 def is_complete(matrix):
     """Tests if the graph is complete (all possible edges exist, including self-loops)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n == 0:
         return False
     
     for i in range(n):
         for j in range(n):
-            if matrix[i][j] == 0 and matrix[j][i] == 0:
+            if matrix[i, j] == 0 and matrix[j, i] == 0:
                 return False
     return True
 
 def is_soft_complete(matrix):
     """Tests if the graph is soft complete (at least one directed edge exists between every pair of distinct vertices)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n == 0:
         return False
     
     for i in range(n):
         for j in range(n):
-            if i != j and matrix[i][j] == 0 and matrix[j][i] == 0:
+            if i != j and matrix[i, j] == 0 and matrix[j, i] == 0:
                 return False
     return True
 
 def is_reflexive(matrix):
     """Tests if the graph is reflexive (all vertices have self-loops)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n == 0:
         return False
     
     for i in range(n):
-        if matrix[i][i] != 1:
+        if matrix[i, i] != 1:
             return False
     return True
 
 def is_symmetric(matrix):
     """Tests if the graph is symmetric (if a->b then b->a)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n == 0:
         return False
     
     for i in range(n):
         for j in range(n):
-            if matrix[i][j] != matrix[j][i]:
+            if matrix[i, j] != matrix[j, i]:
                 return False
     return True
 
 def is_antisymmetric(matrix):
     """Tests if the graph is antisymmetric (if a->b and b->a then a=b)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n == 0:
         return False
     
     for i in range(n):
         for j in range(n):
-            if i != j and matrix[i][j] == 1 and matrix[j][i] == 1:
+            if i != j and matrix[i, j] == 1 and matrix[j, i] == 1:
                 return False
     return True
 
 def is_transitive(matrix):
     """Tests if the graph is transitive (if a->b and b->c then a->c)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n < 3:  # Transitivity is not defined for graphs with less than 3 vertices
         return False
     
     for i in range(n):
         for j in range(n):
             for k in range(n):
-                if matrix[i][j] == 1 and matrix[j][k] == 1:
-                    if matrix[i][k] != 1:
+                if matrix[i, j] == 1 and matrix[j, k] == 1:
+                    if matrix[i, k] != 1:
                         return False
     return True
 
 def is_negatively_transitive(matrix):
     """Tests if the graph is negatively transitive (if not a->b and not b->c then not a->c)"""
-    n = len(matrix)
+    if matrix is None:
+        return False
+    n = matrix.shape[0]
     if n < 3:  # Negative transitivity is not defined for graphs with less than 3 vertices
         return False
     
     for i in range(n):
         for j in range(n):
             for k in range(n):
-                if matrix[i][j] == 0 and matrix[j][k] == 0:
-                    if matrix[i][k] != 0:
+                if matrix[i, j] == 0 and matrix[j, k] == 0:
+                    if matrix[i, k] != 0:
                         return False
     return True
 
@@ -148,7 +164,9 @@ def analyze_graph(points, links):
             'is_antisymmetric': False,
             'is_transitive': False,
             'num_vertices': 0,
-            'num_edges': 0
+            'num_edges': 0,
+            'is_complete_order': False,
+            'is_complete_preorder': False
         }
     
     matrix = build_adjacency_matrix(points, links)
