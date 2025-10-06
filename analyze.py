@@ -3,12 +3,13 @@ Graph Analysis Module
 =====================
 
 This module provides functions to analyze directed graphs represented as adjacency matrices.
-It tests various mathematical properties of graphs including completeness, reflexivity,
-symmetry, antisymmetry, and transitivity.
+It tests various mathematical properties of graphs including strict completeness, soft completeness,
+reflexivity, symmetry, antisymmetry, and transitivity.
 
 Functions:
 - build_adjacency_matrix: Constructs an adjacency matrix from points and links
-- is_complete: Tests if all possible edges exist (except self-loops)
+- is_strictly_complete: Tests if all possible edges exist (except self-loops)
+- is_soft_complete: Tests if at least one directed edge exists between every pair of distinct vertices
 - is_reflexive: Tests if all vertices have self-loops
 - is_symmetric: Tests if the relation is symmetric (a->b implies b->a)
 - is_antisymmetric: Tests if the relation is antisymmetric (a->b and b->a implies a=b)
@@ -34,8 +35,8 @@ def build_adjacency_matrix(points, links):
     
     return matrix
 
-def is_complete(matrix):
-    """Tests if the graph is complete (all possible edges exist, except self-loops)"""
+def is_strictly_complete(matrix):
+    """Tests if the graph is strictly complete (all possible edges exist, except self-loops)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -43,6 +44,18 @@ def is_complete(matrix):
     for i in range(n):
         for j in range(n):
             if i != j and matrix[i][j] != 1:
+                return False
+    return True
+
+def is_soft_complete(matrix):
+    """Tests if the graph is soft complete (at least one directed edge exists between every pair of distinct vertices)"""
+    n = len(matrix)
+    if n == 0:
+        return False
+    
+    for i in range(n):
+        for j in range(n):
+            if i != j and matrix[i][j] == 0 and matrix[j][i] == 0:
                 return False
     return True
 
@@ -100,7 +113,8 @@ def analyze_graph(points, links):
     n = len(points)
     if n == 0:
         return {
-            'is_complete': False,
+            'is_strictly_complete': False,
+            'is_soft_complete': False,
             'is_reflexive': False,
             'is_symmetric': False,
             'is_antisymmetric': False,
@@ -112,7 +126,8 @@ def analyze_graph(points, links):
     matrix = build_adjacency_matrix(points, links)
     
     return {
-        'is_complete': is_complete(matrix),
+        'is_strictly_complete': is_strictly_complete(matrix),
+        'is_soft_complete': is_soft_complete(matrix),
         'is_reflexive': is_reflexive(matrix),
         'is_symmetric': is_symmetric(matrix),
         'is_antisymmetric': is_antisymmetric(matrix),

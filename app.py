@@ -10,6 +10,7 @@ Features:
 - Create directed links between points (including self-loops)
 - Generate adjacency matrix representation
 - Analyze graph properties (completeness, reflexivity, symmetry, etc.)
+- Reset the graph to start over
 
 Author: Samuel Chapuis
 Date: October 6, 2025
@@ -64,6 +65,13 @@ def add_link():
     to_id = data.get('to')
     if not any(l['from'] == from_id and l['to'] == to_id for l in links):
         links.append({'from': from_id, 'to': to_id})
+    return jsonify({'success': True})
+
+@app.route('/reset', methods=['POST'])
+def reset_graph():
+    global points, links
+    points = []
+    links = []
     return jsonify({'success': True})
 
 @app.route('/matrix')

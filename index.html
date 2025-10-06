@@ -103,6 +103,18 @@
         .point:hover {
             background-color: darkred;
         }
+        #reset-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #reset-button:hover {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
@@ -123,8 +135,12 @@
                 <span class="property-value info" id="num-edges">0</span>
             </div>
             <div class="property">
-                <span class="property-label">Complete:</span>
-                <span class="property-value" id="is-complete">-</span>
+                <span class="property-label">Strictly Complete:</span>
+                <span class="property-value" id="is-strictly-complete">-</span>
+            </div>
+            <div class="property">
+                <span class="property-label">Soft Complete:</span>
+                <span class="property-value" id="is-soft-complete">-</span>
             </div>
             <div class="property">
                 <span class="property-label">Reflexive:</span>
@@ -145,7 +161,7 @@
         </div>
     </div>
     <div id="canvas-container">
-        <h2>Click Area (Add Points)</h2>
+        <h2>Click Area (Add Points) <button id="reset-button">Reset Graph</button></h2>
         <div id="canvas">
             <svg id="lines">
             </svg>
@@ -161,6 +177,7 @@
         const canvas = document.getElementById('canvas');
         const linesSvg = document.getElementById('lines');
         const matrixTable = document.getElementById('matrix');
+        const resetButton = document.getElementById('reset-button');
 
         // Load matrix and points on startup
         async function loadData() {
@@ -178,7 +195,7 @@
             document.getElementById('num-vertices').textContent = analysis.num_vertices;
             document.getElementById('num-edges').textContent = analysis.num_edges;
             
-            const boolProps = ['is-complete', 'is-reflexive', 'is-symmetric', 'is-antisymmetric', 'is-transitive'];
+            const boolProps = ['is-strictly-complete', 'is-soft-complete', 'is-reflexive', 'is-symmetric', 'is-antisymmetric', 'is-transitive'];
             boolProps.forEach(prop => {
                 const elem = document.getElementById(prop);
                 const key = prop.replace(/-/g, '_');
@@ -215,6 +232,11 @@
                 const y = event.clientY - rect.top;
                 updateTempLine(x, y);
             }
+        });
+
+        resetButton.addEventListener('click', async function() {
+            await fetch('/reset', { method: 'POST' });
+            await loadData();
         });
 
         function updateMatrix(matrixData) {
