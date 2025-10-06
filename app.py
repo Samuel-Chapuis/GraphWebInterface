@@ -12,7 +12,7 @@ Features:
 - Analyze graph properties (completeness, reflexivity, symmetry, etc.)
 
 Author: Samuel Chapuis
-Date: October 2, 2025
+Date: October 6, 2025
 Version: 1.0
 """
 
@@ -27,9 +27,9 @@ from analyze import (analyze_graph, build_adjacency_matrix)
 
 app = Flask(__name__)
 
-# Stocker les points : liste de dicts {'id': str, 'x': float, 'y': float, 'color': str}
+# Store points: list of dicts {'id': str, 'x': float, 'y': float, 'color': str}
 points = []
-# Stocker les liens : liste de dicts {'from': str, 'to': str}
+# Store links: list of dicts {'from': str, 'to': str}
 links = []
 
 def get_random_color():
@@ -79,6 +79,6 @@ def get_matrix():
     })
 
 if __name__ == '__main__':
-    print("Démarrage de l'application Flask...")
-    print("Ouvrez votre navigateur à : http://127.0.0.1:5000/")
+    print("Starting Flask application...")
+    print("Open your browser at: http://127.0.0.1:5000/")
     app.run(debug=True, host='0.0.0.0', port=5000)

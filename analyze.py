@@ -21,7 +21,7 @@ Version: 1.0
 """
 
 def build_adjacency_matrix(points, links):
-    """Construit la matrice d'adjacence à partir des points et liens"""
+    """Builds the adjacency matrix from points and links"""
     n = len(points)
     matrix = [[0 for _ in range(n)] for _ in range(n)]
     id_to_index = {p['id']: i for i, p in enumerate(points)}
@@ -35,7 +35,7 @@ def build_adjacency_matrix(points, links):
     return matrix
 
 def is_complete(matrix):
-    """Test si le graphe est complet (toutes les arêtes possibles existent, sauf boucles)"""
+    """Tests if the graph is complete (all possible edges exist, except self-loops)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -47,7 +47,7 @@ def is_complete(matrix):
     return True
 
 def is_reflexive(matrix):
-    """Test si le graphe est réflexif (tous les sommets ont une boucle)"""
+    """Tests if the graph is reflexive (all vertices have self-loops)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -58,7 +58,7 @@ def is_reflexive(matrix):
     return True
 
 def is_symmetric(matrix):
-    """Test si le graphe est symétrique (si a->b alors b->a)"""
+    """Tests if the graph is symmetric (if a->b then b->a)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -70,7 +70,7 @@ def is_symmetric(matrix):
     return True
 
 def is_antisymmetric(matrix):
-    """Test si le graphe est antisymétrique (si a->b et b->a alors a=b)"""
+    """Tests if the graph is antisymmetric (if a->b and b->a then a=b)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -82,7 +82,7 @@ def is_antisymmetric(matrix):
     return True
 
 def is_transitive(matrix):
-    """Test si le graphe est transitif (si a->b et b->c alors a->c)"""
+    """Tests if the graph is transitive (if a->b and b->c then a->c)"""
     n = len(matrix)
     if n == 0:
         return False
@@ -96,7 +96,7 @@ def is_transitive(matrix):
     return True
 
 def analyze_graph(points, links):
-    """Analyse les propriétés du graphe"""
+    """Analyzes the graph properties"""
     n = len(points)
     if n == 0:
         return {
