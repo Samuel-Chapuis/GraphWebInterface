@@ -45,7 +45,7 @@ The application provides additional matrix computations and sorting functions:
 - **Topological Sort Strict**: Returns a topological sort where only strict pairwise comparisons exist.
 
 <div align="center">
-	<img src="doc/graph_properties.png" alt="Exemple Graph" title="Exemple Graph" style="width:600px; height:auto; object-fit:contain;">
+	<img src="doc/graph_properties.png" alt="Exemple Graph" title="Exemple Graph" style="width:400px; height:auto; object-fit:contain;">
 	<br>
 	<strong>Exemple Graph</strong>
 </div>
@@ -53,7 +53,7 @@ The application provides additional matrix computations and sorting functions:
 <br>
 
 <div align="center">
-	<img src="doc/returner.png" alt="Generated Matrix" title="Generated Matrix" style="width:600px; height:auto; object-fit:contain;">
+	<img src="doc/returner.png" alt="Generated Matrix" title="Generated Matrix" style="width:400px; height:auto; object-fit:contain;">
 	<br>
 	<strong>Generated Matrix</strong>
 </div>
